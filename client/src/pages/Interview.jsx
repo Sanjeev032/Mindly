@@ -73,7 +73,7 @@ const Interview = () => {
     const fetchInterview = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/interviews/${id}`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interviews/${id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const msgs = res.data.data.messages || [];
@@ -137,7 +137,7 @@ const Interview = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`http://localhost:5000/api/interviews/${id}/message`, { message: text }, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interviews/${id}/message`, { message: text }, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

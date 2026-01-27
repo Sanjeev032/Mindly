@@ -74,53 +74,120 @@ exports.sendMessage = async (req, res) => {
         if (lastExchange) {
             lastExchange.user_answer_text = message;
             lastExchange.response_time_ms = 0; // measurement pending
-
-            // ASYNC: Generate Feedback for this answer
-            // We await it for MVP simplicity
-            const feedback = await ollamaService.analyzeResponse(lastExchange.question_text, message);
-            lastExchange.feedback = {
-                score: feedback.score,
-                critique: feedback.critique,
-                improvement_tip: feedback.improvement
-            };
-
             await lastExchange.save();
         }
 
-        // 3. Generate NEXT Question
-        // Context: Last 3 exchanges
-        const recentExchanges = await QuestionExchange.find({ session_id: sessionId })
-            .sort({ sequence_index: -1 })
-            .limit(3);
+        // 3. Prepare Logic for Next Question
+        const role = session.type || 'Software Engineer';
+        const topic = lastExchange?.topic || 'General Technical';
+        const previousQuestion = lastExchange?.question_text || 'Intro';
+        const difficulty = lastExchange?.complexity || 'Medium';
 
-        // Format history for AI
-        // We act as if we are continuing the chat
-        const chatHistory = recentExchanges.reverse().map(ex => [
-            { role: 'assistant', content: ex.question_text },
-            { role: 'user', content: ex.user_answer_text || '' } // Last one might be null if just started, but we just filled it
-        ]).flat();
+        const systemPrompt = `
+You are an AI interviewer conducting a REAL technical interview.
 
-        const aiResponseText = await ollamaService.chat(chatHistory);
+STRICT RULES:
+- You must NOT ask random or pre-written questions
+- Every next question MUST depend on the candidate’s LAST answer
+- You must behave like a human interviewer who probes depth, clarity, and honesty
+- Use ONLY reasoning, not external APIs
+- Assume the model runs locally via Ollama (open-source LLM)
 
-        // 4. Create NEW Exchange for this new question
+INPUT YOU RECEIVE EACH TURN:
+1. Interview role: ${role}
+2. Topic being tested: ${topic}
+3. Previous question: "${previousQuestion}"
+4. Candidate’s answer: "${message}"
+5. Difficulty level: ${difficulty}
+
+YOUR TASK:
+1. Analyze the candidate’s answer and classify it into ONE category:
+   - STRONG (correct + depth + example)
+   - PARTIAL (correct but shallow or vague)
+   - WEAK (confused or incorrect)
+   - BLUFFING (buzzwords without explanation)
+
+2. Based on the classification, generate the NEXT question:
+
+   IF STRONG:
+   - Ask a deeper "HOW / WHY / EDGE CASE" question
+   - Increase difficulty slightly
+   - Example: performance, internals, trade-offs
+
+   IF PARTIAL:
+   - Ask a clarifying follow-up
+   - Force the candidate to give an example or explain internals
+
+   IF WEAK:
+   - Ask a simpler foundational question
+   - Test basic understanding without embarrassment
+
+   IF BLUFFING:
+   - Ask a very specific implementation-level question
+   - Force concrete explanation (syntax, flow, lifecycle, steps)
+
+3. The counter-question MUST:
+   - Be directly connected to the candidate’s answer
+   - Feel like a natural human follow-up
+   - Be no longer than 2–3 sentences
+   - Increase or decrease difficulty logically
+
+4. NEVER reveal your classification.
+5. NEVER explain the answer.
+6. ONLY ask the next question.
+
+OUTPUT FORMAT (STRICT JSON):
+{
+  "answer_quality": "STRONG | PARTIAL | WEAK | BLUFFING",
+  "counter_question": "Next interview question here"
+}
+`;
+
+        let aiResponse;
+        try {
+            const rawResponse = await ollamaService.generate(systemPrompt, 'llama3.2', { format: 'json' });
+            aiResponse = JSON.parse(rawResponse);
+        } catch (e) {
+            console.error("AI Generation/Parsing Failed:", e);
+            // Fallback
+            aiResponse = {
+                answer_quality: "N/A",
+                counter_question: "Could you elaborate on that?"
+            };
+        }
+
+        // Update previous exchange with quality
+        if (lastExchange) {
+            lastExchange.answer_quality = aiResponse.answer_quality;
+            // Also store as feedback for backward compat if needed, or just rely on global feedback later
+            lastExchange.feedback = {
+                score: aiResponse.answer_quality === 'STRONG' ? 9 : aiResponse.answer_quality === 'PARTIAL' ? 6 : 3,
+                critique: `Rated as ${aiResponse.answer_quality}`,
+                improvement_tip: "Keep practicing."
+            };
+            await lastExchange.save();
+        }
+
+        // 4. Create NEW Exchange
         const nextSequence = (lastExchange?.sequence_index || 0) + 1;
         const newExchange = await QuestionExchange.create({
             session_id: sessionId,
             sequence_index: nextSequence,
-            question_text: aiResponseText,
-            topic: 'General', // N/A for now
-            complexity: 'Medium'
+            question_text: aiResponse.counter_question,
+            topic: topic, // Maintain topic or let AI suggest? For now maintain.
+            complexity: difficulty // Could adjust based on quality, but let's keep simple for now
         });
 
         res.status(200).json({
             success: true,
             data: {
-                ai_message: aiResponseText,
+                ai_message: aiResponse.counter_question,
                 feedback: lastExchange?.feedback
             }
         });
 
     } catch (err) {
+        console.error(err);
         res.status(500).json({ success: false, error: err.message });
     }
 };

@@ -19,7 +19,7 @@ const Dashboard = () => {
     const fetchInterviews = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/interviews', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interviews`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             setInterviews(res.data.data);
@@ -34,7 +34,7 @@ const Dashboard = () => {
         try {
             const token = localStorage.getItem('token');
             // Using the Refactored backend API
-            const res = await axios.post('http://localhost:5000/api/interviews', { type }, {
+            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interviews`, { type }, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             // New API returns { data: { session_id, message } }
@@ -142,8 +142,8 @@ const Dashboard = () => {
                                         <div key={session._id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition cursor-pointer" onClick={() => navigate(`/interview/${session._id}`)}>
                                             <div className="flex items-center gap-4">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${session.type === 'HR' ? 'bg-blue-900 text-blue-300' :
-                                                        session.type === 'Technical' ? 'bg-emerald-900 text-emerald-300' :
-                                                            'bg-purple-900 text-purple-300'
+                                                    session.type === 'Technical' ? 'bg-emerald-900 text-emerald-300' :
+                                                        'bg-purple-900 text-purple-300'
                                                     }`}>
                                                     {session.type?.[0] || '?'}
                                                 </div>

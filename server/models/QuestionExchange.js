@@ -22,6 +22,11 @@ const QuestionExchangeSchema = new mongoose.Schema({
         enum: ['Easy', 'Medium', 'Hard'],
         default: 'Medium'
     },
+    answer_quality: {
+        type: String,
+        enum: ['STRONG', 'PARTIAL', 'WEAK', 'BLUFFING', 'N/A'],
+        default: 'N/A'
+    },
     user_answer_text: {
         type: String
     },

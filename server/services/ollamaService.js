@@ -16,7 +16,7 @@ class OllamaService {
         }
     }
 
-    async generate(prompt, model = this.defaultModel) {
+    async generate(prompt, model = this.defaultModel, options = {}) {
         try {
             const response = await fetch(`${this.baseUrl}/api/generate`, {
                 method: 'POST',
@@ -24,7 +24,8 @@ class OllamaService {
                 body: JSON.stringify({
                     model: model,
                     prompt: prompt,
-                    stream: false
+                    stream: false,
+                    ...options
                 })
             });
 
@@ -37,7 +38,7 @@ class OllamaService {
         }
     }
 
-    async chat(messages, model = this.defaultModel) {
+    async chat(messages, model = this.defaultModel, options = {}) {
         try {
             const response = await fetch(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
@@ -45,7 +46,8 @@ class OllamaService {
                 body: JSON.stringify({
                     model: model,
                     messages: messages,
-                    stream: false
+                    stream: false,
+                    ...options
                 })
             });
 
