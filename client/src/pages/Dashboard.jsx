@@ -3,8 +3,8 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import AuthContext from '../context/AuthContext';
 import ResumeUploader from '../components/ResumeUploader';
-import StatCard from '../components/StatCard';
-import { FaChartLine, FaHistory, FaCode, FaUserTie, FaNetworkWired } from 'react-icons/fa';
+import Logo from '../components/Logo';
+import { FaHistory, FaCode, FaUserTie, FaNetworkWired, FaSignOutAlt, FaPlus, FaRocket } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
@@ -33,12 +33,10 @@ const Dashboard = () => {
     const startInterview = async (type) => {
         try {
             const token = localStorage.getItem('token');
-            // Using the Refactored backend API
             const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interviews`, { type }, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            // New API returns { data: { session_id, message } }
-            const sessionId = res.data.data.session_id || res.data.data._id; // Fallback for safety
+            const sessionId = res.data.data.session_id || res.data.data._id;
             navigate(`/interview/${sessionId}`);
         } catch (err) {
             console.error('Failed to start interview', err);
@@ -47,138 +45,145 @@ const Dashboard = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white font-sans">
-            {/* Top Navigation */}
-            <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-10">
-                <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-white">AI</div>
-                        <span className="font-bold text-xl tracking-tight">Coach</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <span className="text-gray-400 text-sm hidden md:block">Welcome, {user?.name}</span>
-                        <div className="w-px h-6 bg-gray-700 hidden md:block"></div>
-                        <button onClick={logout} className="text-sm font-medium text-red-400 hover:text-red-300 transition">
-                            Sign Out
+        <div className="min-h-screen relative overflow-hidden bg-black text-white">
+            {/* Ambient Background */}
+            <div className="absolute top-0 right-0 w-[40vw] h-[40vw] bg-purple-900/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+            {/* Navbar */}
+            <nav className="relative z-20 border-b border-white/5 bg-black/50 backdrop-blur-md">
+                <div className="container mx-auto px-6 h-16 flex justify-between items-center">
+                    <Logo />
+                    <div className="flex items-center gap-6">
+                        <div className="hidden md:flex flex-col items-end">
+                            <span className="text-sm font-semibold text-white">{user?.name}</span>
+                            <span className="text-xs text-purple-400">{user?.profile?.target_role || 'Candidate'}</span>
+                        </div>
+                        <div className="w-px h-8 bg-white/10 hidden md:block"></div>
+                        <button onClick={logout} className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
+                            <FaSignOutAlt />
+                            <span className="hidden sm:inline">Sign Out</span>
                         </button>
                     </div>
                 </div>
             </nav>
 
-            <main className="container mx-auto px-6 py-8">
-                {/* Header Section */}
-                <div className="mb-10">
-                    <h1 className="text-3xl font-bold text-white mb-2">Interview Dashboard</h1>
-                    <p className="text-gray-400">Track your progress and practice with AI-driven scenarios.</p>
+            <main className="container mx-auto px-6 py-10 relative z-10">
+                {/* Header */}
+                <div className="mb-12">
+                    <h1 className="text-4xl font-bold tracking-tight mb-2">
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Dashboard</span>
+                    </h1>
+                    <p className="text-gray-400">Select a module to begin your practice.</p>
+                </div>
+
+                {/* Primary Action Tiles */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <button
+                        onClick={() => startInterview('HR')}
+                        className="group relative h-64 glass-card p-8 flex flex-col justify-between overflow-hidden text-left"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="relative z-10 w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-2xl group-hover:scale-110 transition-transform duration-300">
+                            <FaUserTie />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-blue-200 transition-colors">HR Round</h3>
+                            <p className="text-sm text-gray-400">Behavioral questions & culture fit assessment.</p>
+                        </div>
+                        <div className="absolute bottom-4 right-4 text-blue-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                            <FaPlus />
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => startInterview('Technical')}
+                        className="group relative h-64 glass-card p-8 flex flex-col justify-between overflow-hidden text-left"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="relative z-10 w-14 h-14 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-2xl group-hover:scale-110 transition-transform duration-300">
+                            <FaCode />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-purple-200 transition-colors">Technical</h3>
+                            <p className="text-sm text-gray-400">Data structures, algorithms & coding challenges.</p>
+                        </div>
+                        <div className="absolute bottom-4 right-4 text-purple-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                            <FaPlus />
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => startInterview('System Design')}
+                        className="group relative h-64 glass-card p-8 flex flex-col justify-between overflow-hidden text-left"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="relative z-10 w-14 h-14 rounded-2xl bg-pink-500/20 flex items-center justify-center text-pink-400 text-2xl group-hover:scale-110 transition-transform duration-300">
+                            <FaNetworkWired />
+                        </div>
+                        <div className="relative z-10">
+                            <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-pink-200 transition-colors">System Design</h3>
+                            <p className="text-sm text-gray-400">Scalability, architecture & distributed systems.</p>
+                        </div>
+                        <div className="absolute bottom-4 right-4 text-pink-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-4 group-hover:translate-x-0">
+                            <FaPlus />
+                        </div>
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    {/* LEFT COLUMN: Actions & Stats */}
-                    <div className="lg:col-span-2 space-y-8">
-
-                        {/* Stats Row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <StatCard
-                                title="Total Sessions"
-                                value={interviews.length}
-                                icon={<FaHistory className="text-blue-400 text-xl" />}
-                                color="bg-blue-500"
-                            />
-                            <StatCard
-                                title="Avg Score"
-                                value={interviews.length > 0 ? "7.5" : "-"} // Placeholder until scoring engine is fully hooked up
-                                icon={<FaChartLine className="text-green-400 text-xl" />}
-                                color="bg-green-500"
-                            />
+                    {/* Activity Feed */}
+                    <div className="lg:col-span-2 glass-panel rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                <FaHistory className="text-gray-400" /> Recent History
+                            </h2>
                         </div>
 
-                        {/* Start Interview Cards */}
-                        <div>
-                            <h2 className="text-xl font-semibold mb-4 text-gray-200">Start Practice</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <button
-                                    onClick={() => startInterview('HR')}
-                                    className="p-6 rounded-xl bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 transition shadow-lg text-left group relative overflow-hidden"
-                                >
-                                    <FaUserTie className="text-3xl mb-4 text-blue-200" />
-                                    <h3 className="font-bold text-lg">HR Round</h3>
-                                    <p className="text-blue-200 text-sm mt-1 opacity-80">Behavioral & Culture fit questions.</p>
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-10 -mt-10 transition group-hover:scale-150"></div>
-                                </button>
-
-                                <button
-                                    onClick={() => startInterview('Technical')}
-                                    className="p-6 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 transition shadow-lg text-left group relative overflow-hidden"
-                                >
-                                    <FaCode className="text-3xl mb-4 text-emerald-200" />
-                                    <h3 className="font-bold text-lg">Technical</h3>
-                                    <p className="text-emerald-200 text-sm mt-1 opacity-80">Coding & Algorithm deep dives.</p>
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-10 -mt-10 transition group-hover:scale-150"></div>
-                                </button>
-
-                                <button
-                                    onClick={() => startInterview('System Design')}
-                                    className="p-6 rounded-xl bg-gradient-to-br from-purple-600 to-purple-800 hover:from-purple-500 hover:to-purple-700 transition shadow-lg text-left group relative overflow-hidden"
-                                >
-                                    <FaNetworkWired className="text-3xl mb-4 text-purple-200" />
-                                    <h3 className="font-bold text-lg">System Design</h3>
-                                    <p className="text-purple-200 text-sm mt-1 opacity-80">Architecture & Scalability.</p>
-                                    <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-5 rounded-full -mr-10 -mt-10 transition group-hover:scale-150"></div>
-                                </button>
+                        {loading ? (
+                            <div className="text-center py-10 text-gray-500 animate-pulse">Syncing...</div>
+                        ) : interviews.length === 0 ? (
+                            <div className="text-center py-12">
+                                <p className="text-gray-500">No sessions yet.</p>
                             </div>
-                        </div>
-
-                        {/* Recent Activity */}
-                        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-                            <h2 className="text-xl font-semibold mb-4 text-gray-200">Recent History</h2>
-                            {loading ? (
-                                <div className="text-gray-500 animate-pulse">Loading sessions...</div>
-                            ) : interviews.length === 0 ? (
-                                <div className="text-gray-500 py-4 text-center">No interviews yet. Start one above!</div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {interviews.map(session => (
-                                        <div key={session._id} className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg hover:bg-gray-700 transition cursor-pointer" onClick={() => navigate(`/interview/${session._id}`)}>
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${session.type === 'HR' ? 'bg-blue-900 text-blue-300' :
-                                                    session.type === 'Technical' ? 'bg-emerald-900 text-emerald-300' :
-                                                        'bg-purple-900 text-purple-300'
-                                                    }`}>
-                                                    {session.type?.[0] || '?'}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-semibold text-white">{session.type} Interview</h4>
-                                                    <p className="text-xs text-gray-400">{new Date(session.started_at || session.createdAt).toLocaleDateString()}</p>
-                                                </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {interviews.map(session => (
+                                    <div key={session._id} onClick={() => navigate(`/interview/${session._id}`)} className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer transition-colors group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${session.type === 'HR' ? 'bg-blue-500/20 text-blue-400' :
+                                                    session.type === 'Technical' ? 'bg-purple-500/20 text-purple-400' : 'bg-pink-500/20 text-pink-400'
+                                                }`}>
+                                                <FaRocket className="text-sm" />
                                             </div>
-                                            <div className="text-right">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${session.status === 'COMPLETED' ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>
-                                                    {session.status || 'ACTIVE'}
-                                                </span>
+                                            <div>
+                                                <h4 className="font-medium text-gray-200 group-hover:text-white">{session.type} Round</h4>
+                                                <p className="text-xs text-gray-500">{new Date(session.createdAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                        <span className={`text-xs px-3 py-1 rounded-full border ${session.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                                            }`}>
+                                            {session.status || 'ACTIVE'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    {/* RIGHT COLUMN: Profile & Resume */}
-                    <div className="space-y-8">
-                        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-                            <h2 className="text-xl font-semibold mb-4 text-gray-200">Resume Intelligence</h2>
-                            <p className="text-sm text-gray-400 mb-4">Upload your resume to let the AI customize questions to your experience level.</p>
-                            <ResumeUploader onUploadSuccess={() => alert("Profile Updated!")} />
-                        </div>
+                    {/* Resume Sidebar */}
+                    <div className="glass-panel rounded-2xl p-6">
+                        <h2 className="text-lg font-bold text-white mb-4">Resume Context</h2>
+                        <ResumeUploader onUploadSuccess={() => alert("Resume Analyzed!")} />
 
-                        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700 opacity-60 pointer-events-none grayscale">
-                            <h2 className="text-xl font-semibold mb-2 text-gray-200">Daily Challenge</h2>
-                            <p className="text-sm text-gray-400">Coming Soon...</p>
+                        <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-white/10">
+                            <p className="text-xs text-purple-200 font-medium">Pro Tip</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Uploading your resume allows Mindly to ask specific questions about your past projects.
+                            </p>
                         </div>
                     </div>
-
                 </div>
+
             </main>
         </div>
     );
