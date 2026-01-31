@@ -6,5 +6,5 @@
         }
     ],
     "framework": "vite",
-    "cleanUrls": true
+    "outputDirectory": "dist"
 }
