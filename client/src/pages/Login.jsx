@@ -131,6 +131,12 @@ const Login = () => {
                                     />
                                 </div>
                                 <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="invisible">Password</span> {/* Spacer */}
+                                        <Link to="/forgot-password" className="text-xs text-purple-400 hover:text-purple-300 hover:underline">
+                                            Forgot Password?
+                                        </Link>
+                                    </div>
                                     <input
                                         type="password"
                                         value={password}
