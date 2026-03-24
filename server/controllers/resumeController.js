@@ -48,9 +48,6 @@ exports.uploadResume = async (req, res) => {
         user.profile.resume_claims = analysis.claims || [];
         user.resumeText = resumeText;
 
-        // Sync legacy fields if needed
-        user.skills = user.profile.skills;
-
         await user.save();
 
         res.status(200).json({

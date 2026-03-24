@@ -22,7 +22,7 @@ const AudioVisualizer = ({ isSpeaking }) => {
             <div className={`absolute inset-0 bg-purple-500/20 rounded-full blur-3xl transition-opacity duration-500 ${isSpeaking ? 'opacity-100' : 'opacity-40'}`}></div>
 
             <p className={`absolute -bottom-16 text-sm font-semibold tracking-[0.2em] uppercase transition-colors duration-300 ${isSpeaking ? 'text-purple-300 animate-pulse' : 'text-gray-600'}`}>
-                {isSpeaking ? 'Mindly Listening...' : 'Waiting...'}
+                {isSpeaking ? 'Mindly Speaking...' : 'Waiting...'}
             </p>
         </div>
     );

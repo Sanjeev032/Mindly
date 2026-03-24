@@ -92,7 +92,8 @@ const sendTokenResponse = (user, statusCode, res) => {
             id: user._id,
             name: user.name,
             email: user.email,
-            targetRole: user.targetRole
+            targetRole: user.profile?.target_role,
+            experienceLevel: user.profile?.experience_level
         }
     });
 };
