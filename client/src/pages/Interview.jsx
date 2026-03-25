@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useQuery, useMutation } from '@apollo/client';
+import { GET_SESSION, SEND_MESSAGE } from '../graphql/interviews';
 import useMediaStream from '../hooks/useMediaStream';
 import AudioVisualizer from '../components/AudioVisualizer';
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash, FaPhoneSlash, FaArrowLeft, FaStop, FaPlay } from 'react-icons/fa';
@@ -21,6 +22,34 @@ const Interview = () => {
     const videoRef = useRef(null);
     const recognitionRef = useRef(null);
     const fullTranscriptRef = useRef('');
+
+    // GraphQL
+    const { data, loading: queryLoading } = useQuery(GET_SESSION, {
+        variables: { id },
+        onCompleted: (data) => {
+            if (data?.session?.exchanges) {
+                const mappedMessages = [];
+                data.session.exchanges.forEach(ex => {
+                    mappedMessages.push({ role: 'assistant', content: ex.questionText });
+                    if (ex.userAnswerText) {
+                        mappedMessages.push({
+                            role: 'user',
+                            content: ex.userAnswerText,
+                            feedback: ex.feedback
+                        });
+                    }
+                });
+                setMessages(mappedMessages);
+
+                const lastEx = data.session.exchanges[data.session.exchanges.length - 1];
+                if (lastEx && !lastEx.userAnswerText) {
+                    speak(lastEx.questionText);
+                }
+            }
+        }
+    });
+
+    const [sendMessage] = useMutation(SEND_MESSAGE);
 
     // 1. Initialize Video Stream
     useEffect(() => {
@@ -57,29 +86,6 @@ const Interview = () => {
             };
         }
     }, []);
-
-    // 3. Fetch Initial Data
-    useEffect(() => {
-        fetchInterview();
-    }, [id]);
-
-    const fetchInterview = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interviews/${id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const msgs = res.data.data.messages || [];
-            setMessages(msgs);
-
-            const lastMsg = msgs[msgs.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
-                speak(lastMsg.content);
-            }
-        } catch (err) {
-            console.error(err);
-        }
-    };
 
     const toggleListening = () => {
         if (!recognitionRef.current) return;
@@ -129,18 +135,19 @@ const Interview = () => {
         setMessages(prev => [...prev, newUserMsg]);
 
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interviews/${id}/message`, { message: text }, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const { data: mutationData } = await sendMessage({
+                variables: { sessionId: id, message: text }
             });
 
-            const { ai_message, feedback: newFeedback } = res.data.data;
+            const exchanges = mutationData.sendMessage.exchanges;
+            const lastExchange = exchanges[exchanges.length - 1];
+            const secondToLastExchange = exchanges[exchanges.length - 2];
 
-            const newAiMsg = { role: 'assistant', content: ai_message };
+            const newAiMsg = { role: 'assistant', content: lastExchange.questionText };
             setMessages(prev => [...prev, newAiMsg]);
 
-            if (newFeedback) setFeedback(newFeedback);
-            speak(ai_message);
+            if (secondToLastExchange?.feedback) setFeedback(secondToLastExchange.feedback);
+            speak(lastExchange.questionText);
 
         } catch (err) {
             console.error(err);
@@ -153,6 +160,8 @@ const Interview = () => {
         window.speechSynthesis.cancel();
         navigate('/dashboard');
     };
+
+    if (queryLoading) return <div className="h-screen bg-black text-gray-500 flex items-center justify-center animate-pulse">Establishing Neural Link...</div>;
 
     return (
         <div className="h-screen bg-black text-white flex flex-col overflow-hidden relative">

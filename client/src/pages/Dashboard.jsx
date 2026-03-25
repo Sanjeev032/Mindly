@@ -1,48 +1,32 @@
-import { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation } from '@apollo/client';
 import AuthContext from '../context/AuthContext';
 import ResumeUploader from '../components/ResumeUploader';
 import Logo from '../components/Logo';
+import { GET_SESSIONS, START_INTERVIEW } from '../graphql/interviews';
 import { FaHistory, FaCode, FaUserTie, FaNetworkWired, FaSignOutAlt, FaPlus, FaRocket } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
-    const [interviews, setInterviews] = useState([]);
-    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchInterviews();
-    }, []);
+    const { data, loading, error } = useQuery(GET_SESSIONS);
+    const [createInterview] = useMutation(START_INTERVIEW);
 
-    const fetchInterviews = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/interviews`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setInterviews(res.data.data);
-        } catch (err) {
-            console.error('Failed to fetch interviews', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const interviews = data?.sessions || [];
 
     const startInterview = async (type) => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/interviews`, { type }, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const sessionId = res.data.data.session_id || res.data.data._id;
-            navigate(`/interview/${sessionId}`);
+            const { data } = await createInterview({ variables: { type } });
+            navigate(`/interview/${data.startInterview.id}`);
         } catch (err) {
             console.error('Failed to start interview', err);
             alert('Failed to start session. Check console.');
         }
     };
+
+    if (error) return <div className="min-h-screen bg-black text-red-500 flex items-center justify-center">Error: {error.message}</div>;
 
     return (
         <div className="min-h-screen relative overflow-hidden bg-black text-white">
@@ -56,7 +40,7 @@ const Dashboard = () => {
                     <div className="flex items-center gap-6">
                         <div className="hidden md:flex flex-col items-end">
                             <span className="text-sm font-semibold text-white">{user?.name}</span>
-                            <span className="text-xs text-purple-400">{user?.profile?.target_role || 'Candidate'}</span>
+                            <span className="text-xs text-purple-400">{user?.targetRole || 'Candidate'}</span>
                         </div>
                         <div className="w-px h-8 bg-white/10 hidden md:block"></div>
                         <button onClick={logout} className="flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-white transition-colors">
@@ -148,7 +132,7 @@ const Dashboard = () => {
                         ) : (
                             <div className="space-y-4">
                                 {interviews.map(session => (
-                                    <div key={session._id} onClick={() => navigate(`/interview/${session._id}`)} className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer transition-colors group">
+                                    <div key={session.id} onClick={() => navigate(`/interview/${session.id}`)} className="flex items-center justify-between p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 cursor-pointer transition-colors group">
                                         <div className="flex items-center gap-4">
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${session.type === 'HR' ? 'bg-blue-500/20 text-blue-400' :
                                                     session.type === 'Technical' ? 'bg-purple-500/20 text-purple-400' : 'bg-pink-500/20 text-pink-400'
@@ -157,7 +141,7 @@ const Dashboard = () => {
                                             </div>
                                             <div>
                                                 <h4 className="font-medium text-gray-200 group-hover:text-white">{session.type} Round</h4>
-                                                <p className="text-xs text-gray-500">{new Date(session.createdAt).toLocaleDateString()}</p>
+                                                <p className="text-xs text-gray-500">{new Date(parseInt(session.startedAt)).toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                         <span className={`text-xs px-3 py-1 rounded-full border ${session.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
