@@ -1,4 +1,4 @@
-const { gql } = require('graphql-tag');
+const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
   type User {
@@ -7,22 +7,18 @@ const typeDefs = gql`
     email: String!
     targetRole: String
     experienceLevel: String
-    skills: [String]
-    resumeClaims: [String]
-    interviewsCompleted: Int
-    avgScore: Float
-    createdAt: String
+    skills: String
   }
 
-  type InterviewSession {
-    id: ID!
-    type: String!
-    status: String!
-    overallScore: Int
-    startedAt: String
-    endedAt: String
-    transcriptSummary: String
-    exchanges: [QuestionExchange]
+  type AuthResponse {
+    token: String!
+    user: User!
+  }
+
+  type Feedback {
+    score: Int
+    critique: String
+    improvementTip: String
   }
 
   type QuestionExchange {
@@ -32,14 +28,15 @@ const typeDefs = gql`
     userAnswerText: String
     answerQuality: String
     feedback: Feedback
-    createdAt: String
   }
 
-  type Feedback {
-    score: Int
-    critique: String
-    improvementTip: String
-    toneAnalysis: String
+  type InterviewSession {
+    id: ID!
+    type: String!
+    status: String!
+    startedAt: String!
+    overallScore: Float
+    exchanges: [QuestionExchange]
   }
 
   type Query {
@@ -48,16 +45,11 @@ const typeDefs = gql`
     session(id: ID!): InterviewSession
   }
 
-  type AuthPayload {
-    token: String!
-    user: User!
-  }
-
   type Mutation {
-    register(name: String!, email: String!, password: String!, targetRole: String, experienceLevel: String): AuthPayload
-    login(email: String!, password: String!): AuthPayload
-    startInterview(type: String!): InterviewSession
-    sendMessage(sessionId: ID!, message: String!): InterviewSession
+    register(name: String!, email: String!, password: String!, targetRole: String, experienceLevel: String): AuthResponse!
+    login(email: String!, password: String!): AuthResponse!
+    startInterview(type: String!): InterviewSession!
+    sendMessage(sessionId: ID!, message: String!): InterviewSession!
   }
 `;
 

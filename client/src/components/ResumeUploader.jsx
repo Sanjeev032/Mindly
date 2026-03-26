@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { FaCloudUploadAlt, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
 const ResumeUploader = ({ onUploadSuccess }) => {
@@ -45,20 +44,27 @@ const ResumeUploader = ({ onUploadSuccess }) => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/resume/upload`, formData, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/resume/upload`, {
+                method: 'POST',
+                body: formData,
                 headers: {
-                    'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`
                 }
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Upload failed');
+            }
+
+            const result = await response.json();
             setStatus('success');
             setMessage('Resume analyzed successfully!');
-            if (onUploadSuccess) onUploadSuccess(res.data.data.analysis);
+            if (onUploadSuccess) onUploadSuccess(result.data.analysis);
         } catch (err) {
             console.error(err);
             setStatus('error');
-            const errMsg = err.response?.data?.error || err.message || 'Upload failed.';
-            setMessage(errMsg);
+            setMessage(err.message || 'Upload failed.');
         } finally {
             setUploading(false);
         }

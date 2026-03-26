@@ -1,15 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const createApolloServer = require('./graphql/apolloServer');
+const path = require('path');
+const createApolloServer = require('./server/graphql/apolloServer');
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, 'server', '.env') });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize Apollo
 createApolloServer(app).then(() => {
     console.log('🚀 Apollo Server Ready at /graphql');
 }).catch(err => {
@@ -17,10 +17,11 @@ createApolloServer(app).then(() => {
 });
 
 app.get('/', (req, res) => {
-    res.send('AI Career Coach API is running');
+    res.send('AI Career Coach API is running from ROOT');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = 5001; // DIFFERENT PORT
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log('Server running on port', PORT);
 });

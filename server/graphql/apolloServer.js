@@ -3,31 +3,30 @@ const typeDefs = require('./typeDefs');
 const resolvers = require('./resolvers');
 const jwt = require('jsonwebtoken');
 
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
 const createApolloServer = async (app) => {
-  const server = new ApolloServer({
-    typeDefs,
-    resolvers,
-    context: ({ req }) => {
-      // Get the user from the JWT token
-      const authHeader = req.headers.authorization || '';
-      const token = authHeader.replace('Bearer ', '');
-      
-      if (token) {
-        try {
-          const user = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
-          return { user };
-        } catch (err) {
-          console.error('Invalid token');
+    const server = new ApolloServer({
+        typeDefs,
+        resolvers,
+        context: ({ req }) => {
+            const auth = req.headers.authorization || '';
+            if (auth.startsWith('Bearer ')) {
+                try {
+                    const token = auth.substring(7);
+                    const user = jwt.verify(token, JWT_SECRET);
+                    return { user };
+                } catch (err) {
+                    return {};
+                }
+            }
+            return {};
         }
-      }
-      return {};
-    }
-  });
+    });
 
-  await server.start();
-  server.applyMiddleware({ app });
-
-  return server;
+    await server.start();
+    server.applyMiddleware({ app });
+    return server;
 };
 
 module.exports = createApolloServer;

@@ -1,144 +1,126 @@
-const prisma = require('../prisma/client');
-const bcrypt = require('bcryptjs');
+const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
-const ollamaService = require('../services/ollamaService');
+const bcrypt = require('bcryptjs');
+
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 const resolvers = {
-  Query: {
-    me: async (_, __, { user }) => {
-      if (!user) return null;
-      const foundUser = await prisma.user.findUnique({ where: { id: user.id } });
-      if (foundUser) {
-        // Map string to array for skills/claims
-        foundUser.skills = foundUser.skills ? JSON.parse(foundUser.skills) : [];
-        foundUser.resumeClaims = foundUser.resumeClaims ? JSON.parse(foundUser.resumeClaims) : [];
-      }
-      return foundUser;
-    },
-    sessions: async (_, __, { user }) => {
-      if (!user) return [];
-      return await prisma.interviewSession.findMany({
-        where: { userId: user.id },
-        include: { exchanges: true },
-        orderBy: { startedAt: 'desc' }
-      });
-    },
-    session: async (_, { id }, { user }) => {
-      if (!user) return null;
-      return await prisma.interviewSession.findUnique({
-        where: { id },
-        include: { exchanges: { orderBy: { sequenceIndex: 'asc' } } }
-      });
-    }
-  },
-
-  Mutation: {
-    register: async (_, { name, email, password, targetRole, experienceLevel }) => {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-
-      const user = await prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hashedPassword,
-          targetRole: targetRole || 'Software Engineer',
-          experienceLevel: experienceLevel || 'Junior'
-        }
-      });
-
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secret123', { expiresIn: '30d' });
-      return { token, user };
-    },
-
-    login: async (_, { email, password }) => {
-      const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) throw new Error('Invalid credentials');
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) throw new Error('Invalid credentials');
-
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET || 'secret123', { expiresIn: '30d' });
-      return { token, user };
-    },
-
-    startInterview: async (_, { type }, { user }) => {
-      if (!user) throw new Error('Authentication required');
-
-      const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
-      const skills = dbUser.skills ? JSON.parse(dbUser.skills) : [];
-
-      let systemPrompt = `You are a professional ${type} Interviewer. Start by introducing yourself and asking the first question.`;
-      if (skills.length > 0) {
-        systemPrompt += `\nCONTEXT: The candidate knows ${skills[0]}. Ask about it.`;
-      }
-
-      const aiGreeting = await ollamaService.generate(systemPrompt);
-
-      const session = await prisma.interviewSession.create({
-        data: {
-          userId: user.id,
-          type: type || 'HR',
-          status: 'ACTIVE',
-          exchanges: {
-            create: {
-              sequenceIndex: 1,
-              questionText: aiGreeting,
-              topic: 'Opening',
-              complexity: 'Easy'
-            }
-          }
+    Query: {
+        me: async (_, __, { user }) => {
+            if (!user) return null;
+            return await prisma.user.findUnique({ where: { id: user.id } });
         },
-        include: { exchanges: true }
-      });
-
-      return session;
-    },
-
-    sendMessage: async (_, { sessionId, message }, { user }) => {
-      if (!user) throw new Error('Authentication required');
-
-      const session = await prisma.interviewSession.findUnique({
-        where: { id: sessionId },
-        include: { exchanges: { orderBy: { sequenceIndex: 'desc' }, take: 1 } }
-      });
-      if (!session) throw new Error('Session not found');
-
-      const lastExchange = session.exchanges[0];
-
-      // Update last exchange with user answer
-      await prisma.questionExchange.update({
-        where: { id: lastExchange.id },
-        data: { userAnswerText: message }
-      });
-
-      // AI Logic for next question
-      const systemPrompt = `Analyze the candidate's answer: "${message}" to the question: "${lastExchange.questionText}". Provide next question in JSON format: { "answer_quality": "...", "counter_question": "..." }`;
-      
-      let aiResponse;
-      try {
-        const raw = await ollamaService.generate(systemPrompt, 'llama3.2', { format: 'json' });
-        aiResponse = JSON.parse(raw);
-      } catch (e) {
-        aiResponse = { answer_quality: "N/A", counter_question: "Could you elaborate on that?" };
-      }
-
-      // Create new exchange
-      await prisma.questionExchange.create({
-        data: {
-          sessionId,
-          sequenceIndex: lastExchange.sequenceIndex + 1,
-          questionText: aiResponse.counter_question,
-          answerQuality: aiResponse.answer_quality
+        sessions: async (_, __, { user }) => {
+            if (!user) throw new Error('Not authenticated');
+            return await prisma.interviewSession.findMany({
+                where: { userId: user.id },
+                orderBy: { startedAt: 'desc' }
+            });
+        },
+        session: async (_, { id }, { user }) => {
+            if (!user) throw new Error('Not authenticated');
+            const session = await prisma.interviewSession.findUnique({
+                where: { id },
+                include: { exchanges: true }
+            });
+            if (session && session.userId !== user.id) throw new Error('Unauthorized');
+            
+            // Parse feedback JSON for each exchange
+            if (session) {
+                session.exchanges = session.exchanges.map(ex => ({
+                    ...ex,
+                    feedback: ex.feedback ? JSON.parse(ex.feedback) : null
+                }));
+            }
+            return session;
         }
-      });
+    },
+    Mutation: {
+        register: async (_, { name, email, password, targetRole, experienceLevel }) => {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const user = await prisma.user.create({
+                data: { name, email, password: hashedPassword, targetRole, experienceLevel }
+            });
+            const token = jwt.sign({ id: user.id }, JWT_SECRET);
+            return { token, user };
+        },
+        login: async (_, { email, password }) => {
+            const user = await prisma.user.findUnique({ where: { email } });
+            if (!user) throw new Error('User not found');
+            const valid = await bcrypt.compare(password, user.password);
+            if (!valid) throw new Error('Invalid password');
+            const token = jwt.sign({ id: user.id }, JWT_SECRET);
+            return { token, user };
+        },
+        startInterview: async (_, { type }, { user }) => {
+            if (!user) throw new Error('Not authenticated');
+            const session = await prisma.interviewSession.create({
+                data: {
+                    type,
+                    userId: user.id,
+                    exchanges: {
+                        create: {
+                            sequenceIndex: 0,
+                            questionText: `Hello! I'm your AI Interviewer. Ready to start your ${type} interview?`
+                        }
+                    }
+                },
+                include: { exchanges: true }
+            });
+            return session;
+        },
+        sendMessage: async (_, { sessionId, message }, { user }) => {
+            if (!user) throw new Error('Not authenticated');
+            const session = await prisma.interviewSession.findUnique({
+                where: { id: sessionId },
+                include: { exchanges: true }
+            });
+            if (!session || session.userId !== user.id) throw new Error('Session not found');
 
-      return await prisma.interviewSession.findUnique({
-        where: { id: sessionId },
-        include: { exchanges: { orderBy: { sequenceIndex: 'asc' } } }
-      });
+            // Find current sequence index
+            const lastIndex = session.exchanges.length > 0 ? 
+                Math.max(...session.exchanges.map(e => e.sequenceIndex)) : -1;
+
+            // Simple AI Mock logic
+            const nextQuestion = "That's an interesting answer. Can you tell me more about your technical experience?";
+            const feedback = JSON.stringify({
+                score: 80,
+                critique: "Good answer, but could be more specific.",
+                improvementTip: "Try using the STAR method."
+            });
+
+            // Update last exchange with user answer and feedback
+            if (lastIndex >= 0) {
+                const lastExchange = session.exchanges.find(e => e.sequenceIndex === lastIndex);
+                await prisma.questionExchange.update({
+                    where: { id: lastExchange.id },
+                    data: { userAnswerText: message, feedback, answerQuality: 'Good' }
+                });
+            }
+
+            // Create next exchange
+            await prisma.questionExchange.create({
+                data: {
+                    sessionId,
+                    sequenceIndex: lastIndex + 1,
+                    questionText: nextQuestion
+                }
+            });
+
+            const updatedSession = await prisma.interviewSession.findUnique({
+                where: { id: sessionId },
+                include: { exchanges: true }
+            });
+
+            updatedSession.exchanges = updatedSession.exchanges.map(ex => ({
+                ...ex,
+                feedback: ex.feedback ? JSON.parse(ex.feedback) : null
+            }));
+
+            return updatedSession;
+        }
     }
-  }
 };
 
 module.exports = resolvers;

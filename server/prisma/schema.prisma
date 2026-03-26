@@ -1,55 +1,42 @@
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
 model User {
-  id                  String             @id @default(uuid())
-  name                String
-  email               String             @unique
-  password            String
-  targetRole          String             @default("Software Engineer")
-  experienceLevel     String             @default("Junior")
-  skills              String?             // SQLite doesn't support arrays, use JSON string
-  resumeClaims        String?             // SQLite doesn't support arrays, use JSON string
-  interviewsCompleted Int                @default(0)
-  avgScore            Float              @default(0)
-  resumeText          String?
-  createdAt           DateTime           @default(now())
-  sessions            InterviewSession[]
+  id              String             @id @default(uuid())
+  name            String
+  email           String             @unique
+  password        String
+  targetRole      String?
+  experienceLevel String?
+  skills          String?            // SQLite doesn't support String[] natively, storing as comma-separated or JSON
+  sessions        InterviewSession[]
+  createdAt       DateTime           @default(now())
 }
 
 model InterviewSession {
-  id                String             @id @default(uuid())
-  userId            String
-  user              User               @relation(fields: [userId], references: [id])
-  type              String             @default("HR")
-  status            String             @default("ACTIVE")
-  startedAt         DateTime           @default(now())
-  endedAt           DateTime?
-  overallScore      Int                @default(0)
-  transcriptSummary String?
-  exchanges         QuestionExchange[]
+  id           String             @id @default(uuid())
+  type         String
+  status       String             @default("PENDING")
+  startedAt    DateTime           @default(now())
+  overallScore Float?
+  user         User               @relation(fields: [userId], references: [id])
+  userId       String
+  exchanges    QuestionExchange[]
 }
 
 model QuestionExchange {
-  id                    String           @id @default(uuid())
-  sessionId             String
-  session               InterviewSession @relation(fields: [sessionId], references: [id])
-  sequenceIndex         Int
-  questionText          String
-  topic                 String?
-  complexity            String           @default("Medium")
-  answerQuality         String           @default("N/A")
-  userAnswerText        String?
-  responseTimeMs        Int?
-  feedbackScore         Int?
-  feedbackCritique      String?
-  feedbackImprovementTip String?
-  feedbackToneAnalysis  String?
-  createdAt             DateTime         @default(now())
+  id             String           @id @default(uuid())
+  sequenceIndex  Int
+  questionText   String
+  userAnswerText String?
+  answerQuality  String?
+  feedback       String?          // JSON string for score, critique, improvementTip
+  session        InterviewSession @relation(fields: [sessionId], references: [id])
+  sessionId      String
 }
