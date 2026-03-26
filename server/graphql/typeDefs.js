@@ -36,6 +36,7 @@ const typeDefs = gql`
     status: String!
     startedAt: String!
     overallScore: Float
+    resumeText: String
     exchanges: [QuestionExchange]
   }
 
@@ -48,7 +49,7 @@ const typeDefs = gql`
   type Mutation {
     register(name: String!, email: String!, password: String!, targetRole: String, experienceLevel: String): AuthResponse!
     login(email: String!, password: String!): AuthResponse!
-    startInterview(type: String!): InterviewSession!
+    startInterview(type: String!, resumeText: String): InterviewSession!
     sendMessage(sessionId: ID!, message: String!): InterviewSession!
   }
 `;

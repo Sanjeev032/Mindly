@@ -13,8 +13,8 @@ export const GET_SESSIONS = gql`
 `;
 
 export const START_INTERVIEW = gql`
-  mutation StartInterview($type: String!) {
-    startInterview(type: $type) {
+  mutation StartInterview($type: String!, $resumeText: String) {
+    startInterview(type: $type, resumeText: $resumeText) {
       id
       type
       status

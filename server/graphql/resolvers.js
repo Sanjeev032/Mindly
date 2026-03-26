@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const prompts = require('../config/interviewPrompts');
+const aiService = require('../services/aiService');
 
 const resolvers = {
     Query: {
@@ -53,16 +55,26 @@ const resolvers = {
             const token = jwt.sign({ id: user.id }, JWT_SECRET);
             return { token, user };
         },
-        startInterview: async (_, { type }, { user }) => {
+        startInterview: async (_, { type, resumeText }, { user }) => {
             if (!user) throw new Error('Not authenticated');
+            const currentUser = await prisma.user.findUnique({ where: { id: user.id } });
+            
+            const aiResponse = await aiService.generateQuestion(
+                type,
+                currentUser.targetRole || 'Software Engineer',
+                currentUser.experienceLevel || 'Mid-level',
+                resumeText || null
+            );
+
             const session = await prisma.interviewSession.create({
                 data: {
                     type,
                     userId: user.id,
+                    resumeText, // Store for continuity
                     exchanges: {
                         create: {
                             sequenceIndex: 0,
-                            questionText: `Hello! I'm your AI Interviewer. Ready to start your ${type} interview?`
+                            questionText: aiResponse.nextQuestion
                         }
                     }
                 },
@@ -82,20 +94,27 @@ const resolvers = {
             const lastIndex = session.exchanges.length > 0 ? 
                 Math.max(...session.exchanges.map(e => e.sequenceIndex)) : -1;
 
-            // Simple AI Mock logic
-            const nextQuestion = "That's an interesting answer. Can you tell me more about your technical experience?";
-            const feedback = JSON.stringify({
-                score: 80,
-                critique: "Good answer, but could be more specific.",
-                improvementTip: "Try using the STAR method."
-            });
+            // Build conversation history
+            const history = session.exchanges
+                .sort((a, b) => a.sequenceIndex - b.sequenceIndex)
+                .map(ex => ([
+                    { role: 'assistant', content: ex.questionText },
+                    ...(ex.userAnswerText ? [{ role: 'user', content: ex.userAnswerText }] : [])
+                ])).flat();
+
+            // Call Grok
+            const aiResponse = await aiService.sendMessage(history, message);
 
             // Update last exchange with user answer and feedback
             if (lastIndex >= 0) {
                 const lastExchange = session.exchanges.find(e => e.sequenceIndex === lastIndex);
                 await prisma.questionExchange.update({
                     where: { id: lastExchange.id },
-                    data: { userAnswerText: message, feedback, answerQuality: 'Good' }
+                    data: { 
+                        userAnswerText: message, 
+                        feedback: JSON.stringify(aiResponse.feedback), 
+                        answerQuality: aiResponse.feedback ? (aiResponse.feedback.score > 70 ? 'Good' : 'Needs Improvement') : 'Neutral'
+                    }
                 });
             }
 
@@ -104,7 +123,7 @@ const resolvers = {
                 data: {
                     sessionId,
                     sequenceIndex: lastIndex + 1,
-                    questionText: nextQuestion
+                    questionText: aiResponse.nextQuestion
                 }
             });
 

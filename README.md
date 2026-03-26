@@ -1,96 +1,40 @@
-# Mindly - AI-Powered Mock Interview Coach
+# Mindly: AI Career Coach (v2.0)
 
-![Mindly Banner](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white) ![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+Mindly is a modern AI-powered interview preparation platform. This version features a complete architectural migration to a relational database and GraphQL for high performance and scalability.
 
-Mindly is an intelligent mock interview platform designed to help candidates prepare for real-world job interviews. It simulates Technical, HR, and Behavioral rounds, providing real-time AI feedback to improve confidence and performance.
+## 🚀 Tech Stack
+- **Frontend**: React (Vite 8), Tailwind CSS, Apollo Client 3
+- **Backend**: Node.js, Express, Apollo Server 3
+- **Database**: PostgreSQL (via Prisma ORM) — *SQLite used for local development*
+- **Auth**: JWT-based authentication via GraphQL mutations
 
-## 🚀 Features
+## 🛠️ Local Development
 
--   **AI-Driven Interviews:** Conversational AI that acts as your interviewer.
--   **Multiple Modes:**
-    -   **Technical:** Coding questions and algorithm discussions.
-    -   **HR:** Cultural fit and behavioral questions.
-    -   **Behavioral:** Situational questions (STAR method).
--   **Real-time Feedback:** Instant analysis of your answers with suggestions for improvement.
--   **Resume Analysis:** AI critique of your resume to highlight strengths and weaknesses.
--   **Speech-to-Text:** Speak your answers naturally (using browser speech recognition).
--   **Dashboard:** Track your progress and past interview sessions.
+### 1. Backend Setup
+1. Navigate to the server folder: `cd server`
+2. Install dependencies: `npm install`
+3. Generate Prisma client: `npx prisma generate`
+4. Initialize the database: `npx prisma db push`
+5. Start the server: `npm run start` (Runs on port 5000)
 
-## 🛠️ Tech Stack
+### 2. Frontend Setup
+1. Navigate to the client folder: `cd client`
+2. Install dependencies: `npm install`
+3. Start the development server: `npm run dev` (Runs on port 5173)
 
-### Frontend
--   **React (Vite):** Fast, modern UI library.
--   **TailwindCSS:** Utility-first styling for a premium, glassmorphism design.
--   **React Router:** SPA routing.
--   **Axios:** API communication.
+## 🌐 Deployment
+For free deployment instructions, refer to the [deployment_guide.md](file:///C:/Users/sanje/.gemini/antigravity/brain/c6081ad3-e043-4e00-99f6-02e9ff32bd65/deployment_guide.md).
 
-### Backend
--   **Node.js & Express:** Robust server-side logic.
--   **MongoDB:** NoSQL database for storing user data and interview sessions.
--   **OpenAI API / Custom LLM:** Powering the interview logic.
+### Quick Deployment Recommendation:
+- **Frontend**: Vercel
+- **Backend**: Render
+- **Database**: Supabase (PostgreSQL)
 
-## 📦 Installation & Local Setup
+## 📝 Key Changes in v2.0
+- **Unified API**: Replaced 10+ REST endpoints with a single `/graphql` endpoint.
+- **Improved State**: Migrated `AuthContext` and `Dashboard` to use Apollo's smart caching.
+- **Vite 8 Support**: Upgraded the build pipeline for faster development and production bundling.
+- **De-hardcoded Logic**: Centralized interview prompts in `server/config/interviewPrompts.js`.
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/mindly.git
-    cd mindly
-    ```
-
-2.  **Install Dependencies:**
-    *   **Frontend:**
-        ```bash
-        cd client
-        npm install
-        ```
-    *   **Backend:**
-        ```bash
-        cd server
-        npm install
-        ```
-
-3.  **Environment Configuration:**
-    *   Create a `.env` file in the `server/` directory:
-        ```env
-        PORT=5000
-        MONGO_URI=your_mongodb_connection_string
-        JWT_SECRET=your_jwt_secret
-        OPENAI_API_KEY=your_openai_key
-        ```
-    *   Create a `.env` file in the `client/` directory:
-        ```env
-        VITE_API_URL=http://localhost:5000
-        ```
-
-4.  **Run Locally:**
-    *   Start Backend:
-        ```bash
-        cd server
-        npm run dev
-        ```
-    *   Start Frontend:
-        ```bash
-        cd client
-        npm run dev
-        ```
-    *   Open `http://localhost:5173` in your browser.
-
-## 🚀 Deployment
-
-### Frontend (Vercel)
-The client is configured for Vercel deployment with the Root Directory set to `client`.
--   **Build Command:** `vite build`
--   **Output Directory:** `dist`
--   **Environment Variables:**
-    -   `VITE_API_URL`: Set this to your deployed backend URL.
-
-### Backend (Render/Railway)
-Deploy the `server` directory as a Node.js web service.
--   **Build Command:** `npm install`
--   **Start Command:** `npm start`
-
-## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-This project is licensed under the MIT License.
+---
+*Built with Mindly v2.0 Architecture.*

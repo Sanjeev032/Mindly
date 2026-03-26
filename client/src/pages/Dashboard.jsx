@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@apollo/client';
 import AuthContext from '../context/AuthContext';
@@ -10,6 +10,7 @@ import { FaHistory, FaCode, FaUserTie, FaNetworkWired, FaSignOutAlt, FaPlus, FaR
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [resumeText, setResumeText] = useState('');
 
     const { data, loading, error } = useQuery(GET_SESSIONS);
     const [createInterview] = useMutation(START_INTERVIEW);
@@ -18,7 +19,12 @@ const Dashboard = () => {
 
     const startInterview = async (type) => {
         try {
-            const { data } = await createInterview({ variables: { type } });
+            const { data } = await createInterview({ 
+                variables: { 
+                    type, 
+                    resumeText: resumeText || null 
+                } 
+            });
             navigate(`/interview/${data.startInterview.id}`);
         } catch (err) {
             console.error('Failed to start interview', err);
@@ -141,7 +147,7 @@ const Dashboard = () => {
                                             </div>
                                             <div>
                                                 <h4 className="font-medium text-gray-200 group-hover:text-white">{session.type} Round</h4>
-                                                <p className="text-xs text-gray-500">{new Date(parseInt(session.startedAt)).toLocaleDateString()}</p>
+                                                <p className="text-xs text-gray-500">{new Date(session.startedAt).toLocaleDateString()}</p>
                                             </div>
                                         </div>
                                         <span className={`text-xs px-3 py-1 rounded-full border ${session.status === 'COMPLETED' ? 'bg-green-500/10 border-green-500/20 text-green-400' : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
@@ -157,7 +163,10 @@ const Dashboard = () => {
                     {/* Resume Sidebar */}
                     <div className="glass-panel rounded-2xl p-6">
                         <h2 className="text-lg font-bold text-white mb-4">Resume Context</h2>
-                        <ResumeUploader onUploadSuccess={() => alert("Resume Analyzed!")} />
+                        <ResumeUploader 
+    onUploadSuccess={() => console.log("Resume Analyzed!")} 
+    onParsedContent={(text) => setResumeText(text)}
+/>
 
                         <div className="mt-6 p-4 rounded-xl bg-gradient-to-br from-purple-900/40 to-blue-900/40 border border-white/10">
                             <p className="text-xs text-purple-200 font-medium">Pro Tip</p>
@@ -165,6 +174,13 @@ const Dashboard = () => {
                                 Uploading your resume allows Mindly to ask specific questions about your past projects.
                             </p>
                         </div>
+
+                        <button 
+                            onClick={() => navigate('/todos')}
+                            className="mt-6 w-full py-3 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all font-medium"
+                        >
+                            <FaDatabase /> Check Supabase Connection
+                        </button>
                     </div>
                 </div>
 

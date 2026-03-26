@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Interview from './pages/Interview';
+import SupabaseTodos from './pages/SupabaseTodos';
 import ProtectedRoute from './components/ProtectedRoute';
 import './index.css';
 
@@ -27,6 +28,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Interview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/todos"
+            element={
+              <ProtectedRoute>
+                <SupabaseTodos />
               </ProtectedRoute>
             }
           />

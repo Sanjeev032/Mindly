@@ -25,6 +25,7 @@ model InterviewSession {
   status       String             @default("PENDING")
   startedAt    DateTime           @default(now())
   overallScore Float?
+  resumeText   String?            // New field for AI context
   user         User               @relation(fields: [userId], references: [id])
   userId       String
   exchanges    QuestionExchange[]

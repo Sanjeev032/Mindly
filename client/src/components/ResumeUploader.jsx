@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FaCloudUploadAlt, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
-const ResumeUploader = ({ onUploadSuccess }) => {
+const ResumeUploader = ({ onUploadSuccess, onParsedContent }) => {
     const [dragging, setDragging] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [status, setStatus] = useState('idle'); // idle, success, error
@@ -60,7 +60,8 @@ const ResumeUploader = ({ onUploadSuccess }) => {
             const result = await response.json();
             setStatus('success');
             setMessage('Resume analyzed successfully!');
-            if (onUploadSuccess) onUploadSuccess(result.data.analysis);
+            if (onUploadSuccess) onUploadSuccess(result.parsedContent);
+            if (onParsedContent) onParsedContent(result.parsedContent);
         } catch (err) {
             console.error(err);
             setStatus('error');
