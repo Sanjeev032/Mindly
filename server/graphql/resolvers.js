@@ -28,12 +28,19 @@ const resolvers = {
             });
             if (session && session.userId !== user.id) throw new Error('Unauthorized');
             
-            // Parse feedback JSON for each exchange
+            // Safely parse feedback JSON for each exchange
             if (session) {
-                session.exchanges = session.exchanges.map(ex => ({
-                    ...ex,
-                    feedback: ex.feedback ? JSON.parse(ex.feedback) : null
-                }));
+                session.exchanges = session.exchanges.map(ex => {
+                    let parsedFeedback = null;
+                    if (ex.feedback) {
+                        try {
+                            parsedFeedback = JSON.parse(ex.feedback);
+                        } catch (e) {
+                            console.error(`Failed to parse feedback for exchange ${ex.id}:`, e.message);
+                        }
+                    }
+                    return { ...ex, feedback: parsedFeedback };
+                });
             }
             return session;
         }
@@ -132,10 +139,18 @@ const resolvers = {
                 include: { exchanges: true }
             });
 
-            updatedSession.exchanges = updatedSession.exchanges.map(ex => ({
-                ...ex,
-                feedback: ex.feedback ? JSON.parse(ex.feedback) : null
-            }));
+            // Safely parse feedback JSON — AI responses can occasionally be malformed
+            updatedSession.exchanges = updatedSession.exchanges.map(ex => {
+                let parsedFeedback = null;
+                if (ex.feedback) {
+                    try {
+                        parsedFeedback = JSON.parse(ex.feedback);
+                    } catch (e) {
+                        console.error(`Failed to parse feedback for exchange ${ex.id}:`, e.message);
+                    }
+                }
+                return { ...ex, feedback: parsedFeedback };
+            });
 
             return updatedSession;
         }

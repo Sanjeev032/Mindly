@@ -5,7 +5,7 @@ import AuthContext from '../context/AuthContext';
 import ResumeUploader from '../components/ResumeUploader';
 import Logo from '../components/Logo';
 import { GET_SESSIONS, START_INTERVIEW } from '../graphql/interviews';
-import { FaHistory, FaCode, FaUserTie, FaNetworkWired, FaSignOutAlt, FaPlus, FaRocket } from 'react-icons/fa';
+import { FaHistory, FaCode, FaUserTie, FaNetworkWired, FaSignOutAlt, FaPlus, FaRocket, FaDatabase } from 'react-icons/fa';
 
 const Dashboard = () => {
     const { user, logout } = useContext(AuthContext);

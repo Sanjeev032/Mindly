@@ -2,13 +2,13 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const multer = require('multer');
-const pdf = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 const createApolloServer = require('./graphql/apolloServer');
 
 dotenv.config();
 
-if (!process.env.XAI_API_KEY || process.env.XAI_API_KEY.includes('your-grok-api-key')) {
-    console.warn('⚠️  XAI_API_KEY is missing or invalid. AI features will fail until updated in .env');
+if (!process.env.GEMINI_API_KEY) {
+    console.warn('⚠️  GEMINI_API_KEY is not set. AI features will return fallback responses until updated in .env');
 }
 
 const app = express();
@@ -33,7 +33,11 @@ app.post('/api/resume/upload', upload.single('file'), async (req, res) => {
 
         let resumeText = '';
         if (req.file.mimetype === 'application/pdf') {
-            const data = await pdf(req.file.buffer);
+            // pdf-parse v2 changed its export shape — handle both v1 and v2
+            const parseFn = typeof pdfParse === 'function'
+                ? pdfParse
+                : (pdfParse.default || pdfParse);
+            const data = await parseFn(req.file.buffer);
             resumeText = data.text;
         } else {
             resumeText = req.file.buffer.toString('utf-8');

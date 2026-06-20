@@ -193,7 +193,7 @@ const Interview = () => {
                     <div className="max-w-3xl text-center min-h-[100px] relative z-20">
                         {messages.filter(m => m.role === 'assistant').slice(-1).map((msg, i) => (
                             <p key={i} className="text-2xl md:text-3xl font-light leading-relaxed text-transparent bg-clip-text bg-gradient-to-r from-blue-200 via-purple-100 to-pink-200 animate-float">
-                                "{msg.content}"
+                                &ldquo;{msg.content}&rdquo;
                             </p>
                         ))}
                     </div>
@@ -201,7 +201,7 @@ const Interview = () => {
                     {feedback && (
                         <div className="absolute top-24 right-8 w-80 glass-panel p-6 rounded-2xl animate-slide-in-right border-l-4 border-l-yellow-500">
                             <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider mb-2 block">Live Feedback</span>
-                            <p className="text-sm text-gray-300 italic">"{feedback.critique}"</p>
+                            <p className="text-sm text-gray-300 italic">&ldquo;{feedback.critique}&rdquo;</p>
                         </div>
                     )}
                 </div>
