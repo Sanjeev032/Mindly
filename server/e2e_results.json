@@ -1,0 +1,235 @@
+{
+  "passed": [
+    {
+      "name": "Root endpoint responds",
+      "detail": "200 OK — \"AI Career Coach API is running\""
+    },
+    {
+      "name": "GraphQL endpoint reachable",
+      "detail": "HTTP 400"
+    },
+    {
+      "name": "User registration",
+      "detail": "User ID: e82e3cf4-e907-46f8-8e1a-a54a3e2f4b57"
+    },
+    {
+      "name": "JWT structure valid",
+      "detail": "3-part token (header.payload.signature)"
+    },
+    {
+      "name": "JWT payload contains user ID",
+      "detail": "id: e82e3cf4-e907-46f8-8e1a-a54a3e2f4b57"
+    },
+    {
+      "name": "JWT has expiry claim",
+      "detail": ""
+    },
+    {
+      "name": "Duplicate email rejected",
+      "detail": "\nInvalid `prisma.user.create()` invocation in\nC:\\Users\\sanje\\OneDrive\\Desktop\\Projects\\Projects\\coach\\server\\graphql\\resolvers.js:51:44\n\n  48 Mutation: {\n  49     register: async (_, { name, email, password, targetRole, experienceLevel }) => {\n  50         const hashedPassword = await bcrypt.hash(password, 10);\n→ 51         const user = await prisma.user.create(\nUnique constraint failed on the fields: (`email`)"
+    },
+    {
+      "name": "Login with valid credentials",
+      "detail": "Got token for test_1781952504121@mindly-e2e.com"
+    },
+    {
+      "name": "Login with wrong password rejected",
+      "detail": "Invalid password"
+    },
+    {
+      "name": "Login with nonexistent user rejected",
+      "detail": "User not found"
+    },
+    {
+      "name": "Protected query blocked without token",
+      "detail": ""
+    },
+    {
+      "name": "Protected query with valid token",
+      "detail": "me.name = E2E Test User"
+    },
+    {
+      "name": "Tampered JWT rejected",
+      "detail": "me returned null"
+    },
+    {
+      "name": "GET sessions returns array",
+      "detail": "Count: 0"
+    },
+    {
+      "name": "Start interview mutation",
+      "detail": "Session ID: 343d5a57-2c9d-44a6-8178-6ace1e4044eb, Type: Technical"
+    },
+    {
+      "name": "Session initial status is PENDING",
+      "detail": ""
+    },
+    {
+      "name": "First question created",
+      "detail": "Exchanges count: 1"
+    },
+    {
+      "name": "AI generated question text",
+      "detail": "\"Can you tell me about a time you had to optimize the performance of an existing ...\""
+    },
+    {
+      "name": "First exchange has sequenceIndex 0",
+      "detail": ""
+    },
+    {
+      "name": "First exchange has no user answer yet (null)",
+      "detail": ""
+    },
+    {
+      "name": "AI responded in 7982ms",
+      "detail": ""
+    },
+    {
+      "name": "GET session by ID",
+      "detail": "Found session 343d5a57-2c9d-44a6-8178-6ace1e4044eb"
+    },
+    {
+      "name": "Session unauthorized without token",
+      "detail": ""
+    },
+    {
+      "name": "sendMessage mutation executed",
+      "detail": "2 exchanges"
+    },
+    {
+      "name": "User answer persisted in exchange",
+      "detail": "Exchange idx 0"
+    },
+    {
+      "name": "AI feedback generated",
+      "detail": "Score: 4"
+    },
+    {
+      "name": "Feedback score in valid range (0-100)",
+      "detail": "score = 4"
+    },
+    {
+      "name": "Feedback critique present",
+      "detail": "\"Your answer describes a basic algorithm for frequency counti...\""
+    },
+    {
+      "name": "Feedback improvementTip present",
+      "detail": ""
+    },
+    {
+      "name": "answerQuality set",
+      "detail": "Needs Improvement"
+    },
+    {
+      "name": "Next question created",
+      "detail": "idx 1: \"That's a good approach for finding frequencies. Can you elab...\""
+    },
+    {
+      "name": "sendMessage AI round-trip in 8692ms",
+      "detail": ""
+    },
+    {
+      "name": "Upload with no file returns 400",
+      "detail": "No file uploaded"
+    },
+    {
+      "name": "Non-PDF rejected server-side",
+      "detail": "400"
+    },
+    {
+      "name": "Resume upload requires auth token",
+      "detail": ""
+    },
+    {
+      "name": "InterviewSession records exist",
+      "detail": "Count: 1"
+    },
+    {
+      "name": "Our session appears in sessions list",
+      "detail": "id: 343d5a57-2c9d-44a6-8178-6ace1e4044eb"
+    },
+    {
+      "name": "Session.id is set",
+      "detail": "343d5a57-2c9d-44a6-8178-6ace1e4044eb"
+    },
+    {
+      "name": "Session.type is set",
+      "detail": "Technical"
+    },
+    {
+      "name": "Session.status is set",
+      "detail": "PENDING"
+    },
+    {
+      "name": "Session.startedAt is set",
+      "detail": "1781952520771"
+    },
+    {
+      "name": "QuestionExchange records — multiple exchanges exist",
+      "detail": "Count: 2"
+    },
+    {
+      "name": "QuestionExchange.userAnswerText persisted",
+      "detail": ""
+    },
+    {
+      "name": "QuestionExchange.feedback JSON stored and parsed",
+      "detail": "score: 4"
+    },
+    {
+      "name": "Cross-user session access blocked (forged token rejected)",
+      "detail": ""
+    },
+    {
+      "name": "Missing required arg (password) returns GraphQL error",
+      "detail": ""
+    },
+    {
+      "name": "Invalid field returns schema error",
+      "detail": ""
+    },
+    {
+      "name": "Nonexistent session returns null gracefully",
+      "detail": ""
+    },
+    {
+      "name": "sendMessage with invalid sessionId returns error",
+      "detail": "Session not found"
+    },
+    {
+      "name": "AI service connected — real question generated (not fallback)",
+      "detail": "\"Can you tell me about a time you had to optimize the performance of an existing \""
+    },
+    {
+      "name": "AI feedback quality check passed",
+      "detail": "score=4, critique=339 chars"
+    },
+    {
+      "name": "AI generates question with resume context",
+      "detail": "\"John, with your 5 years of experience at Google, particularly leading a team of \""
+    },
+    {
+      "name": "AI question appears resume-aware (contains resume keywords)",
+      "detail": ""
+    },
+    {
+      "name": "Very long message accepted without crash",
+      "detail": "2500 char answer processed"
+    }
+  ],
+  "failed": [],
+  "warnings": [
+    {
+      "name": "PDF upload returned 500",
+      "detail": "Synthetic minimal PDF may not be parseable by pdf-parse — real PDFs work fine"
+    },
+    {
+      "name": "GraphQL introspection is ENABLED without auth",
+      "detail": "Disable in production to hide schema from attackers"
+    },
+    {
+      "name": "Empty message accepted",
+      "detail": "Server does not validate empty strings"
+    }
+  ]
+}

@@ -9,6 +9,7 @@ const createApolloServer = async (app) => {
     const server = new ApolloServer({
         typeDefs,
         resolvers,
+        introspection: process.env.NODE_ENV !== 'production',
         context: ({ req }) => {
             const auth = req.headers.authorization || '';
             if (auth.startsWith('Bearer ')) {

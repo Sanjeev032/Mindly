@@ -51,7 +51,7 @@ const resolvers = {
             const user = await prisma.user.create({
                 data: { name, email, password: hashedPassword, targetRole, experienceLevel }
             });
-            const token = jwt.sign({ id: user.id }, JWT_SECRET);
+            const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
             return { token, user };
         },
         login: async (_, { email, password }) => {
@@ -59,7 +59,7 @@ const resolvers = {
             if (!user) throw new Error('User not found');
             const valid = await bcrypt.compare(password, user.password);
             if (!valid) throw new Error('Invalid password');
-            const token = jwt.sign({ id: user.id }, JWT_SECRET);
+            const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
             return { token, user };
         },
         startInterview: async (_, { type, resumeText }, { user }) => {
@@ -120,7 +120,7 @@ const resolvers = {
                     data: { 
                         userAnswerText: message, 
                         feedback: JSON.stringify(aiResponse.feedback), 
-                        answerQuality: aiResponse.feedback ? (aiResponse.feedback.score > 70 ? 'Good' : 'Needs Improvement') : 'Neutral'
+                        answerQuality: aiResponse.feedback ? (aiResponse.feedback.score >= 7 ? 'Good' : 'Needs Improvement') : 'Neutral'
                     }
                 });
             }

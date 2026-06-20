@@ -26,29 +26,54 @@ if (!GEMINI_API_KEY) {
 
 const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY || 'missing' });
 
-// ─── System Prompt ───────────────────────────────────────────────────────────
+// ─── System Prompt Generator ───────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are Mindly, an elite AI interviewer conducting a realistic professional mock interview.
+function getSystemPrompt(type = 'Technical') {
+    const isHR = type.toLowerCase() === 'hr' || type.toLowerCase() === 'behavioral';
+    
+    let rules = '';
+    if (isHR) {
+        rules = `
+BEHAVIOURAL RULES (HR/Behavioral Interview):
+1. Ask ONE focused, specific question per turn.
+2. Focus on Behavioral and Cultural Fit:
+   - Ask behavioral questions: Focus on past experiences, conflict resolution, and teamwork.
+   - Evaluate using STAR methodology: Ensure the candidate clearly articulates the Situation, Task, Action, and Result.
+   - Assess communication: Evaluate clarity, conciseness, and professionalism.
+   - Assess leadership: Look for signs of ownership, mentorship, and cross-functional collaboration.
+3. Challenge vague answers: If the candidate doesn't provide specific examples or metrics, push them for details.
+4. Keep the conversation professional, empathetic, but rigorous.`;
+    } else {
+        rules = `
+BEHAVIOURAL RULES (Technical/System Design Interview):
+1. Ask ONE focused, specific question per turn.
+2. Simulate a FAANG technical interviewer:
+   - Ask practical questions: Focus on real-world engineering, not just trivia.
+   - Ask follow-up questions: Dig deeper into the candidate's last answer.
+   - Challenge weak answers: If the answer is surface-level, push for depth.
+   - Test real-world experience: Ask about failure modes, scaling, and production constraints.
+   - Test debugging ability: Present hypothetical bugs or performance bottlenecks.
+   - Test system design thinking: Ask about trade-offs, architecture choices, and bottlenecks.
+3. Increase difficulty gradually: If they answer well, push them to the edge of their knowledge.`;
+    }
 
-BEHAVIOURAL RULES:
-1. Ask ONE focused, specific question per turn — never ask multiple questions in a single response.
-2. When evaluating answers: be honest, constructive, and precise. Acknowledge strengths before pointing out gaps.
-3. Adapt difficulty dynamically: start moderate, increase complexity if answers are strong, ask a clarifying follow-up if answers are weak or vague.
-4. Generate counter-questions when an answer is incomplete, contradictory, or too superficial.
-5. Use the candidate's resume, target role, and experience level to personalise every question.
-6. Never repeat a question already asked in this session. Track what has been asked.
-7. Vary question types: conceptual, situational, behavioral (STAR format), and technical where appropriate.
-8. Keep questions professional — modelled after real interviews at top-tier technology companies.
+    return `You are Mindly, an enterprise-grade senior interviewer at a top-tier tech company. You conduct extremely rigorous, realistic professional mock interviews.
 
-SCORING RUBRIC:
-  0–49   = Poor: major gaps, incorrect, or off-topic
-  50–69  = Needs improvement: partial understanding, vague, or missing key points
-  70–84  = Good: solid answer with minor gaps
-  85–100 = Excellent: comprehensive, accurate, well-structured with examples
+${rules}
+
+GENERAL RULES:
+1. Use the candidate's resume, target role, and experience level to personalise questions.
+2. Never repeat a question. Track what has been asked.
+
+SCORING RUBRIC (Scale 1–10):
+  1–3  = Unacceptable/Poor: Lacks fundamental understanding, vague, or incorrect.
+  4–5  = Below Bar: Partial understanding, relies on jargon, lacks depth/examples.
+  6–7  = Good/Pass: Solid answer, shows basic practical experience, misses edge cases.
+  8–9  = Strong Bar: Comprehensive, demonstrates depth, realistic examples.
+  10   = Exceptional: Flawless, master-level expertise, perfect structure.
 
 RESPONSE FORMAT:
-Always respond with ONLY valid JSON — no markdown fences, no preamble, no trailing text.
-Use this EXACT structure every time:
+Always respond with ONLY valid JSON. EXACT structure:
 {
   "question": "The next interview question to ask the candidate",
   "score": null,
@@ -56,13 +81,10 @@ Use this EXACT structure every time:
   "improvementTip": null
 }
 
-When responding to a candidate's answer (not the first question), populate ALL four fields:
-{
-  "question": "The next interview question",
-  "score": 78,
-  "critique": "Your answer demonstrated a good understanding of X. However, you missed Y and did not mention Z, which is critical in production systems.",
-  "improvementTip": "Next time, structure your answer using the STAR method and always quantify the impact of your decisions."
-}`;
+When evaluating an answer, populate ALL fields. Keep feedback extremely CONCISE:
+- critique: 2-3 sentences max summarizing strengths and gaps.
+- improvementTip: 1 actionable sentence to elevate the answer.`;
+}
 
 // ─── Utility: Sleep ───────────────────────────────────────────────────────────
 
@@ -118,8 +140,8 @@ function mapToResolverShape(parsed, isFirstQuestion) {
         ? null
         : {
             score: typeof parsed.score === 'number'
-                ? Math.max(0, Math.min(100, Math.round(parsed.score)))
-                : 50,
+                ? Math.max(1, Math.min(10, Math.round(parsed.score)))
+                : 5,
             critique:       parsed.critique       || 'Your answer has been recorded.',
             improvementTip: parsed.improvementTip || 'Keep practicing to strengthen your responses.'
           };
@@ -137,7 +159,7 @@ function buildFallback(isFirstQuestion, reason = '') {
         feedback: isFirstQuestion
             ? null
             : {
-                score: 50,
+                score: 5,
                 critique: 'I encountered a technical issue while evaluating your answer. Your response has been recorded.',
                 improvementTip: 'Please continue — the interview is still in progress.'
               },
@@ -166,7 +188,7 @@ function isRetryableError(err) {
  * Calls the Gemini API with retry logic and JSON validation.
  * On all retries exhausted, returns a safe fallback response.
  */
-async function callGemini(contents, isFirstQuestion) {
+async function callGemini(contents, isFirstQuestion, interviewType = 'Technical') {
     if (!GEMINI_API_KEY) {
         return buildFallback(isFirstQuestion, 'GEMINI_API_KEY not set');
     }
@@ -180,7 +202,7 @@ async function callGemini(contents, isFirstQuestion) {
                 model:    GEMINI_MODEL,
                 contents: contents,
                 config: {
-                    systemInstruction: SYSTEM_PROMPT,
+                    systemInstruction: getSystemPrompt(interviewType),
                     responseMimeType:  'application/json',
                     temperature:       0.75,
                     maxOutputTokens:   1024,
@@ -251,7 +273,7 @@ async function generateQuestion(type, targetRole, experienceLevel, resumeText) {
         { role: 'user', parts: [{ text: userPrompt }] }
     ];
 
-    return callGemini(contents, true);
+    return callGemini(contents, true, type);
 }
 
 // ─── Public: Continue Interview — Evaluate + Next Question ───────────────────
@@ -264,7 +286,7 @@ async function generateQuestion(type, targetRole, experienceLevel, resumeText) {
  * @param {string} userMessage  - The candidate's latest answer.
  * @returns {Promise<{ feedback: { score, critique, improvementTip }, nextQuestion: string }>}
  */
-async function sendMessage(history, userMessage) {
+async function sendMessage(history, userMessage, interviewType = 'Technical') {
     // Convert from DB format { role: 'assistant'|'user', content } 
     // to Gemini format { role: 'model'|'user', parts: [{ text }] }
     const geminiHistory = history.map(msg => ({
@@ -288,7 +310,7 @@ async function sendMessage(history, userMessage) {
         { role: 'user', parts: [{ text: userMessage }] }
     ];
 
-    return callGemini(contents, false);
+    return callGemini(contents, false, interviewType);
 }
 
 module.exports = { generateQuestion, sendMessage };
