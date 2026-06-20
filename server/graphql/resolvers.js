@@ -104,10 +104,26 @@ const resolvers = {
             // Build conversation history
             const history = session.exchanges
                 .sort((a, b) => a.sequenceIndex - b.sequenceIndex)
-                .map(ex => ([
-                    { role: 'assistant', content: ex.questionText },
-                    ...(ex.userAnswerText ? [{ role: 'user', content: ex.userAnswerText }] : [])
-                ])).flat();
+                .map(ex => {
+                    let assistantContent = ex.questionText;
+                    if (ex.feedback) {
+                        try {
+                            const parsedFb = JSON.parse(ex.feedback);
+                            // Pass the scratchpad back to the AI along with its question
+                            assistantContent = JSON.stringify({
+                                internalNotes: parsedFb.internalNotes,
+                                question: ex.questionText,
+                                score: parsedFb.score,
+                                critique: parsedFb.critique
+                            });
+                        } catch (e) { /* ignore parse errors for history */ }
+                    }
+                    
+                    return [
+                        { role: 'assistant', content: assistantContent },
+                        ...(ex.userAnswerText ? [{ role: 'user', content: ex.userAnswerText }] : [])
+                    ];
+                }).flat();
 
             // Call Grok
             const aiResponse = await aiService.sendMessage(history, message);

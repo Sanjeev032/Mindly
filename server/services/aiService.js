@@ -65,6 +65,12 @@ GENERAL RULES:
 1. Use the candidate's resume, target role, and experience level to personalise questions.
 2. Never repeat a question. Track what has been asked.
 
+CONVERSATION FLOW & TOPIC MEMORY:
+1. Build a coherent interview narrative. Explore a single topic deeply (e.g., Virtual DOM -> Reconciliation -> Rendering Optimization) before shifting topics.
+2. Track strengths and weaknesses. Revisit weak areas later or challenge strong areas with advanced edge cases.
+3. Increase difficulty dynamically when answers are strong. Reduce difficulty or pivot when answers are weak.
+4. Avoid asking unrelated questions too early. Ensure smooth transitions between topics.
+
 SCORING RUBRIC (Scale 1–10):
   1–3  = Unacceptable/Poor: Lacks fundamental understanding, vague, or incorrect.
   4–5  = Below Bar: Partial understanding, relies on jargon, lacks depth/examples.
@@ -75,13 +81,21 @@ SCORING RUBRIC (Scale 1–10):
 RESPONSE FORMAT:
 Always respond with ONLY valid JSON. EXACT structure:
 {
+  "internalNotes": {
+    "currentTopic": "Brief description of current topic",
+    "difficultyLevel": "Current difficulty (e.g. Medium, Hard)",
+    "strengths": ["List of observed strengths"],
+    "weaknesses": ["List of observed weaknesses"],
+    "strategy": "What you plan to test next and why"
+  },
   "question": "The next interview question to ask the candidate",
   "score": null,
   "critique": null,
   "improvementTip": null
 }
 
-When evaluating an answer, populate ALL fields. Keep feedback extremely CONCISE:
+When evaluating an answer, populate ALL fields (score, critique, improvementTip). For the very first question, these 3 fields must be null, but internalNotes MUST still be populated. 
+Keep feedback extremely CONCISE:
 - critique: 2-3 sentences max summarizing strengths and gaps.
 - improvementTip: 1 actionable sentence to elevate the answer.`;
 }
@@ -120,6 +134,9 @@ function validateAIResponse(parsed) {
     if (typeof parsed.question !== 'string' || parsed.question.trim().length < 5) {
         throw new Error(`Invalid "question" field: "${parsed.question}"`);
     }
+    if (!parsed.internalNotes || typeof parsed.internalNotes !== 'object') {
+        throw new Error('Invalid or missing "internalNotes" field.');
+    }
     // score, critique, improvementTip can be null (first question)
     // but if score is present it must be a number
     if (parsed.score !== null && parsed.score !== undefined && typeof parsed.score !== 'number') {
@@ -137,13 +154,14 @@ function mapToResolverShape(parsed, isFirstQuestion) {
     const nextQuestion = parsed.question.trim();
 
     const feedback = isFirstQuestion
-        ? null
+        ? { internalNotes: parsed.internalNotes }
         : {
             score: typeof parsed.score === 'number'
                 ? Math.max(1, Math.min(10, Math.round(parsed.score)))
                 : 5,
             critique:       parsed.critique       || 'Your answer has been recorded.',
-            improvementTip: parsed.improvementTip || 'Keep practicing to strengthen your responses.'
+            improvementTip: parsed.improvementTip || 'Keep practicing to strengthen your responses.',
+            internalNotes:  parsed.internalNotes
           };
 
     return { feedback, nextQuestion };
