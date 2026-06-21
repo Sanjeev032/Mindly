@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 
 const getApiUrl = () => {
   if (import.meta.env.VITE_GRAPHQL_URI) return import.meta.env.VITE_GRAPHQL_URI;
-  return `${window.location.origin.replace('5173', '5000')}/graphql`;
+  return `${window.location.origin.replace('5173', '5001')}/graphql`;
 };
 
 const httpLink = createHttpLink({

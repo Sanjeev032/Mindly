@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const { validateAnswer } = require('../utils/validation');
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -91,6 +92,11 @@ const resolvers = {
         },
         sendMessage: async (_, { sessionId, message }, { user }) => {
             if (!user) throw new Error('Not authenticated');
+
+            // Validate the candidate answer before any DB or AI work.
+            // validateAnswer throws a descriptive Error on any violation.
+            const answer = validateAnswer(message, 'message');
+
             const session = await prisma.interviewSession.findUnique({
                 where: { id: sessionId },
                 include: { exchanges: true }
@@ -125,16 +131,16 @@ const resolvers = {
                     ];
                 }).flat();
 
-            // Call Grok
-            const aiResponse = await aiService.sendMessage(history, message);
+            // Call AI with the validated (trimmed) answer
+            const aiResponse = await aiService.sendMessage(history, answer);
 
-            // Update last exchange with user answer and feedback
+            // Update last exchange with the validated answer and feedback
             if (lastIndex >= 0) {
                 const lastExchange = session.exchanges.find(e => e.sequenceIndex === lastIndex);
                 await prisma.questionExchange.update({
                     where: { id: lastExchange.id },
                     data: { 
-                        userAnswerText: message, 
+                        userAnswerText: answer, 
                         feedback: JSON.stringify(aiResponse.feedback), 
                         answerQuality: aiResponse.feedback ? (aiResponse.feedback.score >= 7 ? 'Good' : 'Needs Improvement') : 'Neutral'
                     }

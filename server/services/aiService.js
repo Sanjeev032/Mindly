@@ -277,7 +277,7 @@ async function callGemini(contents, isFirstQuestion, interviewType = 'Technical'
  */
 async function generateQuestion(type, targetRole, experienceLevel, resumeText) {
     const resumeContext = resumeText
-        ? `\n\nCandidate Resume (use this to personalise your questions):\n---\n${resumeText.substring(0, 3000)}\n---`
+        ? `\n\nCandidate Resume (use this to personalise your questions):\n---\n${resumeText.substring(0, 5000)}\n---`
         : '';
 
     const userPrompt =
