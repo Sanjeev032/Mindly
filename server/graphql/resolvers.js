@@ -3,7 +3,22 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { validateAnswer } = require('../utils/validation');
 
-const prisma = new PrismaClient();
+// Lazy singleton — instantiated on first DB access, not at module load.
+// This lets tests that boot the Apollo server (for introspection / validation /
+// resume-upload checks) import this file without needing a live database URL.
+let _prisma = null;
+function getPrisma() {
+    if (!_prisma) {
+        _prisma = new PrismaClient();
+    }
+    return _prisma;
+}
+// Proxy so all existing `prisma.*` calls work unchanged.
+const prisma = new Proxy({}, {
+    get(_, prop) {
+        return getPrisma()[prop];
+    }
+});
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const prompts = require('../config/interviewPrompts');
 const aiService = require('../services/aiService');
